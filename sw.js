@@ -1,5 +1,5 @@
-const CACHE = 'mmy-v1';
-const ASSETS = ['/', '/index.html', '/manifest.json', '/icon.svg'];
+const CACHE = 'mmy-v2';
+const ASSETS = ['/maomaoyan/', '/maomaoyan/index.html', '/maomaoyan/manifest.json', '/maomaoyan/icon.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
