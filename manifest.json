@@ -1,0 +1,13 @@
+{
+  "name": "猫猫言",
+  "short_name": "猫猫言",
+  "description": "猫猫言 · 聊天界面",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#06090f",
+  "theme_color": "#06090f",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
