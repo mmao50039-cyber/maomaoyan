@@ -743,6 +743,7 @@ function doSend() {
   inputField.value = '';
   inputField.style.height = 'auto';
   if (ws && ws.readyState === WebSocket.OPEN) {
+    currentAiBubble = null;
     const tr = document.createElement('div'); tr.className = 'typing-row'; tr.id = 'typingIndicator';
     const tb = document.createElement('div'); tb.className = 'typing-bubble'; tb.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
     tr.appendChild(makeAv(false)); tr.appendChild(tb); messages.appendChild(tr); messages.scrollTop = messages.scrollHeight;
