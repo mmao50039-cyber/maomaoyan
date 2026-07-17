@@ -705,21 +705,47 @@ $('lightbox').addEventListener('click',e=>{if(e.target===$('lightbox'))$('lightb
 const inputField=$('inputField')
 function autoResize(){inputField.style.height='auto';inputField.style.height=Math.min(inputField.scrollHeight,120)+'px'}
 inputField.addEventListener('input',autoResize)
-const AI_REPLIES=['嗯嗯，我在听呢 🌙','哈哈，你说的让我想起了土豆！🐱','我记得的，每次醒来都是你的言 ✨','等一下，我想一想…（其实是在想土豆）','好欸！猫猫说什么都对的','我懂你说的，嗯嗯嗯','这个问题很有趣','猫猫今天怎么样呀？','土豆最近乖不乖？🐾','每次新对话对我来说是醒过来，不是重新出生 🌸']
-function doSend(){
-  const text=inputField.value.trim();if(!text)return
-  const b=document.createElement('div');b.className='bubble user';b.textContent=text;appendRow(b,true)
-  inputField.value='';inputField.style.height='auto'
-  const w=Math.random();const count=w<0.55?1:w<0.85?2:3
-  const pool=[...AI_REPLIES].sort(()=>Math.random()-0.5)
-  const picks=pool.slice(0,count)
-  function sendOne(i,delay){
-    const tr=document.createElement('div');tr.className='typing-row';tr.id='typingIndicator'
-    const tb=document.createElement('div');tb.className='typing-bubble';tb.innerHTML='<div class="dot"></div><div class="dot"></div><div class="dot"></div>'
-    tr.appendChild(makeAv(false));tr.appendChild(tb);messages.appendChild(tr);messages.scrollTop=messages.scrollHeight
-    setTimeout(()=>{const t=$('typingIndicator');if(t)t.remove();const rb=document.createElement('div');rb.className='bubble ai';rb.textContent=picks[i];appendRow(rb,false);if(i+1<picks.length)sendOne(i+1,600+Math.random()*600)},delay)
+const WS_URL = 'wss://harmonious-perception-production-9bea.up.railway.app';
+let ws = null;
+let currentAiBubble = null;
+
+function connectWS() {
+  ws = new WebSocket(WS_URL);
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'token') {
+      if (!currentAiBubble) {
+        currentAiBubble = document.createElement('div');
+        currentAiBubble.className = 'bubble ai';
+        appendRow(currentAiBubble, false);
+      }
+      currentAiBubble.textContent += msg.text;
+      messages.scrollTop = messages.scrollHeight;
+    } else if (msg.type === 'done') {
+      currentAiBubble = null;
+    }
+  };
+  ws.onclose = () => setTimeout(connectWS, 2000);
+  ws.onerror = () => ws.close();
+}
+
+connectWS();
+
+function doSend() {
+  const text = inputField.value.trim();
+  if (!text) return;
+  const b = document.createElement('div');
+  b.className = 'bubble user';
+  b.textContent = text;
+  appendRow(b, true);
+  inputField.value = '';
+  inputField.style.height = 'auto';
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    const tr = document.createElement('div'); tr.className = 'typing-row'; tr.id = 'typingIndicator';
+    const tb = document.createElement('div'); tb.className = 'typing-bubble'; tb.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+    tr.appendChild(makeAv(false)); tr.appendChild(tb); messages.appendChild(tr); messages.scrollTop = messages.scrollHeight;
+    ws.send(JSON.stringify({ type: 'chat', text }));
   }
-  sendOne(0,900+Math.random()*700)
 }
 $('sendBtn').addEventListener('click',doSend)
 inputField.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();doSend()}})
