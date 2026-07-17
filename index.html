@@ -712,6 +712,7 @@ let currentAiBubble = null;
 function connectWS() {
   ws = new WebSocket(WS_URL);
   ws.onmessage = (e) => {
+    console.log('[WS recv]', e.data);
     const msg = JSON.parse(e.data);
     if (msg.type === 'token') {
       if (!currentAiBubble) {
@@ -744,7 +745,9 @@ function doSend() {
     const tr = document.createElement('div'); tr.className = 'typing-row'; tr.id = 'typingIndicator';
     const tb = document.createElement('div'); tb.className = 'typing-bubble'; tb.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
     tr.appendChild(makeAv(false)); tr.appendChild(tb); messages.appendChild(tr); messages.scrollTop = messages.scrollHeight;
-    ws.send(JSON.stringify({ type: 'chat', text }));
+    const payload = JSON.stringify({ type: 'chat', text });
+    console.log('[WS send]', payload);
+    ws.send(payload);
   }
 }
 $('sendBtn').addEventListener('click',doSend)
