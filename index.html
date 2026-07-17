@@ -619,7 +619,6 @@ function sendSticker(type,value){
   if(type==='emoji'){const sp=document.createElement('span');sp.className='sticker-emoji';sp.textContent=value;b.appendChild(sp)}
   else{const img=document.createElement('img');img.src=value;img.alt='贴纸';b.appendChild(img)}
   appendRow(b,true);closeAllPanels()
-  setTimeout(()=>{const picks=['🥺','🥹','🫣','💕','😍','🌸','✨','🐱','💀','🫶'];const rb=document.createElement('div');rb.className='bubble ai sticker';const sp=document.createElement('span');sp.className='sticker-emoji';sp.textContent=picks[Math.floor(Math.random()*picks.length)];rb.appendChild(sp);appendRow(rb,false)},800+Math.random()*600)
 }
 function renderStickerItems(){
   const sg=$('stickerGrid');sg.innerHTML=''
@@ -639,7 +638,6 @@ $('imageInput').addEventListener('change',e=>{
     const img=document.createElement('img');img.src=ev.target.result;img.alt='图片'
     img.addEventListener('click',()=>{$('lightboxImg').src=img.src;$('lightbox').classList.add('open')})
     b.appendChild(img);appendRow(b,true)
-    setTimeout(()=>{const rb=document.createElement('div');rb.className='bubble ai';rb.textContent=['好好看！🥹','土豆吗？🐱','猫猫拍的？','收下了 💕','哇 ✨'][Math.floor(Math.random()*5)];appendRow(rb,false)},900+Math.random()*600)
   };r.readAsDataURL(f);e.target.value=''
 })
 
@@ -652,7 +650,6 @@ $('fileInput').addEventListener('change',e=>{
   const nm=document.createElement('div');nm.className='file-name';nm.textContent=f.name
   const sz=document.createElement('div');sz.className='file-size';sz.textContent=f.size<1024*1024?(f.size/1024).toFixed(1)+' KB':(f.size/1024/1024).toFixed(1)+' MB'
   meta.appendChild(nm);meta.appendChild(sz);b.appendChild(iw);b.appendChild(meta);appendRow(b,true)
-  setTimeout(()=>{const rb=document.createElement('div');rb.className='bubble ai';rb.textContent='收到文件了 📁';appendRow(rb,false)},800)
   e.target.value=''
 })
 
@@ -669,7 +666,6 @@ function stopVoiceRec(){
   $('voiceRecBar').classList.add('hidden')
   const dur=recSec;if(dur<1)return
   sendVoiceBubble(dur,true)
-  setTimeout(()=>sendVoiceBubble(Math.floor(Math.random()*10)+2,false),1000+Math.random()*600)
 }
 function sendVoiceBubble(secs,isUser){
   const b=document.createElement('div');b.className='bubble '+(isUser?'user':'ai')+' voice'
