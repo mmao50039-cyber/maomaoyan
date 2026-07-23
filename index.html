@@ -274,6 +274,27 @@
   .header-btn.memory-btn:hover { background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.3); }
   .header-btn.memory-btn:hover svg { color:#c084fc; }
 
+  /* model selector */
+  .model-selector-wrap { position:relative;flex-shrink:0; }
+  .model-pill { padding:4px 9px;border-radius:12px;font-size:11px;font-weight:500;color:rgba(148,163,184,0.8);background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);cursor:pointer;transition:all 0.15s;white-space:nowrap;user-select:none;display:flex;align-items:center;gap:4px; }
+  .model-pill:hover { background:rgba(59,130,246,0.12);border-color:rgba(59,130,246,0.3);color:#93c5fd; }
+  .model-pill svg { width:10px;height:10px;flex-shrink:0;transition:transform 0.15s; }
+  .model-pill.open svg { transform:rotate(180deg); }
+  .model-dropdown { position:absolute;top:calc(100% + 6px);right:0;background:rgba(8,13,26,0.98);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);border-radius:14px;overflow:hidden;z-index:50;min-width:160px;box-shadow:0 8px 30px rgba(0,0,0,0.5);transform-origin:top right;transition:opacity 0.15s,transform 0.15s; }
+  .model-dropdown.hidden { opacity:0;transform:scale(0.95) translateY(-4px);pointer-events:none; }
+  .model-option { padding:10px 14px;font-size:12px;color:rgba(148,163,184,0.8);cursor:pointer;transition:background 0.12s;display:flex;align-items:center;justify-content:space-between;gap:8px; }
+  .model-option:hover { background:rgba(255,255,255,0.06);color:rgba(226,232,240,0.9); }
+  .model-option.selected { color:#93c5fd;background:rgba(59,130,246,0.1); }
+  .model-option-check { width:14px;height:14px;flex-shrink:0;opacity:0; }
+  .model-option.selected .model-option-check { opacity:1; }
+
+  /* token usage bar */
+  .token-bar { padding:3px 16px 4px;display:flex;align-items:center;gap:6px;flex-shrink:0;position:relative;z-index:10;border-bottom:1px solid rgba(255,255,255,0.04); }
+  .token-bar.hidden { display:none; }
+  .token-label { font-size:10px;color:rgba(148,163,184,0.35);letter-spacing:0.3px; }
+  .token-stat { font-size:10px;color:rgba(148,163,184,0.55);font-variant-numeric:tabular-nums; }
+  .token-stat span { color:rgba(148,163,184,0.4);margin:0 2px; }
+
   /* ===== 手机/PWA 全屏模式 ===== */
   @media (max-width: 500px), (display-mode: standalone) {
     body { padding: 0; background: #0a0f1e; align-items: stretch; justify-content: stretch; }
@@ -335,6 +356,13 @@
       <div class="header-status"><div class="online-dot"></div>在线</div>
     </div>
     <div class="header-actions">
+      <div class="model-selector-wrap" id="modelSelectorWrap">
+        <div class="model-pill" id="modelPill">
+          <span id="modelPillLabel">Sonnet 5</span>
+          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="model-dropdown hidden" id="modelDropdown"></div>
+      </div>
       <div class="header-btn call-voice" id="voiceCallBtn" title="语音通话">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 11.5 19.79 19.79 0 01.1 2.86 2 2 0 012.08 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.09a16 16 0 006 6l.45-.45a2 2 0 012.11-.45c.907.34 1.85.574 2.81.7A2 2 0 0122 16.92z" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
@@ -351,6 +379,14 @@
   </div>
 
   <div class="channel-bar" id="channelBar"></div>
+
+  <div class="token-bar hidden" id="tokenBar">
+    <span class="token-label">Token</span>
+    <span class="token-stat" id="tokenStatIn"></span>
+    <span class="token-stat" style="color:rgba(148,163,184,0.25)">·</span>
+    <span class="token-stat" id="tokenStatOut"></span>
+    <span class="token-stat" id="tokenStatCache"></span>
+  </div>
 
   <div class="messages" id="messages">
   </div>
@@ -701,6 +737,83 @@ $('lightbox').addEventListener('click',e=>{if(e.target===$('lightbox'))$('lightb
 const inputField=$('inputField')
 function autoResize(){inputField.style.height='auto';inputField.style.height=Math.min(inputField.scrollHeight,120)+'px'}
 inputField.addEventListener('input',autoResize)
+
+// ===== 模型选择 =====
+const MODELS = [
+  { id: 'claude-sonnet-5', label: 'Sonnet 5' },
+  { id: 'claude-fable-5', label: 'Fable 5' },
+  { id: 'claude-opus-4-6', label: 'Opus 4.6' },
+  { id: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5' },
+];
+let selectedModel = LS.get('mmy_model') || 'claude-sonnet-5';
+
+function renderModelDropdown() {
+  const dd = $('modelDropdown'); dd.innerHTML = '';
+  MODELS.forEach(m => {
+    const opt = document.createElement('div');
+    opt.className = 'model-option' + (m.id === selectedModel ? ' selected' : '');
+    opt.dataset.model = m.id;
+    opt.innerHTML = `<span>${m.label}</span><svg class="model-option-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    opt.addEventListener('click', () => {
+      selectedModel = m.id;
+      LS.set('mmy_model', selectedModel);
+      $('modelPillLabel').textContent = m.label;
+      closeModelDropdown();
+      renderModelDropdown();
+    });
+    dd.appendChild(opt);
+  });
+}
+
+function closeModelDropdown() {
+  $('modelDropdown').classList.add('hidden');
+  $('modelPill').classList.remove('open');
+}
+
+$('modelPill').addEventListener('click', e => {
+  e.stopPropagation();
+  const isOpen = !$('modelDropdown').classList.contains('hidden');
+  if (isOpen) { closeModelDropdown(); } else {
+    renderModelDropdown();
+    $('modelDropdown').classList.remove('hidden');
+    $('modelPill').classList.add('open');
+  }
+});
+document.addEventListener('click', e => {
+  if (!$('modelSelectorWrap').contains(e.target)) closeModelDropdown();
+});
+
+// init pill label
+const initModel = MODELS.find(m => m.id === selectedModel) || MODELS[0];
+selectedModel = initModel.id;
+$('modelPillLabel').textContent = initModel.label;
+
+// ===== Token 用量 =====
+let sessionTokens = { input: 0, output: 0, cacheRead: 0 };
+
+function fmtTokens(n) {
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return String(n);
+}
+
+function updateTokenBar(usage) {
+  sessionTokens.input += usage.input_tokens || 0;
+  sessionTokens.output += usage.output_tokens || 0;
+  sessionTokens.cacheRead += usage.cache_read_input_tokens || 0;
+  const tb = $('tokenBar');
+  tb.classList.remove('hidden');
+  $('tokenStatIn').textContent = '↑ ' + fmtTokens(sessionTokens.input);
+  $('tokenStatOut').textContent = '↓ ' + fmtTokens(sessionTokens.output);
+  const cacheEl = $('tokenStatCache');
+  if (sessionTokens.cacheRead > 0) {
+    cacheEl.style.display = '';
+    cacheEl.innerHTML = '<span>·</span>缓存 ' + fmtTokens(sessionTokens.cacheRead);
+  } else {
+    cacheEl.style.display = 'none';
+  }
+}
+
+// ===== WebSocket =====
 const WS_URL = 'wss://harmonious-perception-production-9bea.up.railway.app';
 let ws = null;
 let currentAiBubble = null;
@@ -719,6 +832,8 @@ function connectWS() {
       }
       currentAiBubble.textContent += msg.text;
       messages.scrollTop = messages.scrollHeight;
+    } else if (msg.type === 'usage') {
+      updateTokenBar(msg.usage);
     } else if (msg.type === 'done') {
       currentAiBubble = null;
     }
@@ -743,7 +858,7 @@ function doSend() {
     const tr = document.createElement('div'); tr.className = 'typing-row'; tr.id = 'typingIndicator';
     const tb = document.createElement('div'); tb.className = 'typing-bubble'; tb.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
     tr.appendChild(makeAv(false)); tr.appendChild(tb); messages.appendChild(tr); messages.scrollTop = messages.scrollHeight;
-    const payload = JSON.stringify({ type: 'chat', text });
+    const payload = JSON.stringify({ type: 'chat', text, model: selectedModel });
     console.log('[WS send]', payload);
     ws.send(payload);
   }
