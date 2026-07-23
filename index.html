@@ -386,6 +386,8 @@
     <span class="token-stat" style="color:rgba(148,163,184,0.25)">·</span>
     <span class="token-stat" id="tokenStatOut"></span>
     <span class="token-stat" id="tokenStatCache"></span>
+    <span class="token-stat" style="flex:1"></span>
+    <span class="token-stat" id="tokenStatModel" style="color:rgba(148,163,184,0.35);font-size:9px"></span>
   </div>
 
   <div class="messages" id="messages">
@@ -835,6 +837,9 @@ function connectWS() {
       }
       currentAiBubble.textContent += msg.text;
       messages.scrollTop = messages.scrollHeight;
+    } else if (msg.type === 'model_actual') {
+      $('tokenBar').classList.remove('hidden');
+      $('tokenStatModel').textContent = msg.model;
     } else if (msg.type === 'usage') {
       updateTokenBar(msg.usage);
     } else if (msg.type === 'done') {
